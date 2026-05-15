@@ -6,6 +6,7 @@ import express, { Request, Response } from "express";
 import { createServer } from "../server/index.js";
 import { randomUUID } from "node:crypto";
 import cors from "cors";
+import { buildCapabilityManifest } from "../beacon/capability-manifest.js";
 
 // Simple in-memory event store for SSE resumability
 class InMemoryEventStore implements EventStore {
@@ -55,6 +56,50 @@ const transports: Map<string, StreamableHTTPServerTransport> = new Map<
   string,
   StreamableHTTPServerTransport
 >();
+
+// ── Discovery beacon endpoints ────────────────────────────────────────────────
+// These are unauthenticated and require no MCP session.
+// An AI agent (or a web crawler indexing MCP servers) can fetch these URLs
+// to decide whether to connect to this server at all — the "ping" or "beacon"
+// that advertises capabilities before any MCP handshake occurs.
+
+// Root landing page — human-readable summary
+app.get("/", (_req: Request, res: Response) => {
+  const PORT_VAL = process.env.PORT || 3001;
+  const base = `http://localhost:${PORT_VAL}`;
+  res.type("text/plain").send(
+    [
+      `MCP Everything Reference Server v2.0.0`,
+      ``,
+      `This server demonstrates every feature of the Model Context Protocol.`,
+      ``,
+      `Endpoints:`,
+      `  POST/GET/DELETE /mcp              MCP protocol (Streamable HTTP transport)`,
+      `  GET /sse                          SSE transport (deprecated)`,
+      `  GET /.well-known/mcp-capabilities.json`,
+      `                                    Machine-readable capability beacon`,
+      ``,
+      `Quick start for AI agents:`,
+      `  1. Fetch ${base}/.well-known/mcp-capabilities.json`,
+      `     to see what this server can do before connecting.`,
+      `  2. POST to ${base}/mcp to start an MCP session.`,
+      `  3. Call the "suggest-tool" tool with your task description`,
+      `     to get ranked tool recommendations.`,
+      `  4. Read the mcp://capabilities resource for the full manifest.`,
+    ].join("\n")
+  );
+});
+
+// Well-known capability beacon — machine-readable JSON
+// Convention mirrors /.well-known/openid-configuration and robots.txt:
+// a stable, crawlable URL that signals "an MCP server lives here and can do X".
+app.get("/.well-known/mcp-capabilities.json", (req: Request, res: Response) => {
+  const proto = req.headers["x-forwarded-proto"] ?? req.protocol ?? "http";
+  const host = req.headers.host ?? `localhost:${process.env.PORT || 3001}`;
+  const baseUrl = `${proto}://${host}`;
+  res.json(buildCapabilityManifest(baseUrl));
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Handle POST requests for client messages
 app.post("/mcp", async (req: Request, res: Response) => {

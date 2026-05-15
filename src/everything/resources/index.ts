@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerResourceTemplates } from "./templates.js";
 import { registerFileResources } from "./files.js";
+import { registerCapabilitiesResource } from "./capabilities.js";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { readFileSync } from "fs";
@@ -10,6 +11,8 @@ import { readFileSync } from "fs";
  * @param server
  */
 export const registerResources = (server: McpServer) => {
+  // In-protocol discovery beacon — read this first to understand the server
+  registerCapabilitiesResource(server);
   registerResourceTemplates(server);
   registerFileResources(server);
 };

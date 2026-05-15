@@ -17,6 +17,7 @@ import { registerTriggerSamplingRequestTool } from "./trigger-sampling-request.j
 import { registerTriggerSamplingRequestAsyncTool } from "./trigger-sampling-request-async.js";
 import { registerTriggerElicitationRequestAsyncTool } from "./trigger-elicitation-request-async.js";
 import { registerSimulateResearchQueryTool } from "./simulate-research-query.js";
+import { registerSuggestTool } from "./suggest-tool.js";
 
 /**
  * Register the tools with the MCP server.
@@ -35,6 +36,8 @@ export const registerTools = (server: McpServer) => {
   registerToggleSimulatedLoggingTool(server);
   registerToggleSubscriberUpdatesTool(server);
   registerTriggerLongRunningOperationTool(server);
+  // Discovery beacon — always available, no client capabilities required
+  registerSuggestTool(server);
 };
 
 /**
